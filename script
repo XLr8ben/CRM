@@ -1,0 +1,49 @@
+function sendRenewalReminders() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues(); // Get all data from the sheet
+  
+  var today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+  var recipients = "your@email.com"; // Email recipients
+
+  for (var i = 0; i < data.length; i++) { 
+    var name = data[i][0];  // Name (Column A)
+    var renewalDateStr = data[i][1];  // Renewal Date (Column B)
+    var registrationNo = data[i][2];  // Registration No (Column C)
+
+    if (!renewalDateStr) continue; // Skip empty rows
+
+    var renewalDate = new Date(renewalDateStr);
+    renewalDate.setHours(0, 0, 0, 0); // Normalize date for comparison
+
+    var reminderDate = new Date(renewalDate);
+    reminderDate.setDate(renewalDate.getDate() - 30);  // 1 month before renewal
+
+    if (today.toDateString() === reminderDate.toDateString()) {
+      var subject = "🚨 Insurance Renewal Reminder";
+      var message = "Subject: Insurance Expiry Alert\n\n"
+            + "Hello,\n\n"
+            + "The following insurance policy is nearing expiry:\n\n"
+            + "🔹 **Name:** " + name + "\n"
+            + "🔹 **Registration No:** " + registrationNo + "\n"
+            + "🔹 **Expiry Date:** " + renewalDateStr + "\n\n"
+            + "Please contact " + name + " to remind them about the renewal.\n\n"
+            + "Best Regards,\nYour Insurance Management System";
+
+      try {
+        MailApp.sendEmail({
+          to: recipients,
+          subject: subject,
+          body: message
+        });
+
+        Logger.log("✅ Reminder sent for " + name + " (" + registrationNo + ")");
+      } catch (error) {
+        Logger.log("❌ Error sending email to " + name + ": " + error.toString());
+      }
+
+      Utilities.sleep(2000); // Wait 2 seconds to avoid hitting email limits
+    }
+  }
+}
